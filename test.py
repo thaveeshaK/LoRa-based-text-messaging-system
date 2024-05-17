@@ -7,14 +7,16 @@ def login():
     if (username == "" and password == ""):
         messagebox.showinfo("Error", "Please enter both username and password")
 
-    elif(username=="" and password == ""):
+    elif(username=="admin" and password == "password"):
         messagebox.showinfo("", "Login Success!")
 
     else:
         messagebox.showinfo("Error", "Incorrect username or password")
+
 root = Tk()
 root.title("LoRa Based Messagin System - Login")
-root.geometry('500x500')
+root.geometry('400x250')
+root.resizable(False, False)
 
 global entry1
 global entry2
@@ -28,7 +30,7 @@ entry1.place(x=140,y=20)
 entry2=Entry(root,bd=5)
 entry2.place(x=140,y=100)
 
-Button(root,text="Login", command=login(),height=2, width=13, bd=6).place(x=150,y=160)
+Button(root,text="Login", command=login,height=2, width=13, bd=6).place(x=150,y=160)
 
 root.mainloop()
 
