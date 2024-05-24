@@ -29,7 +29,7 @@ int RELAY;
 int TYPE = 1;  // Message type
 char CUSTOM_MESSAGE[20];  // Custom message field
 
-int MESSAGELENGTH = 56;  // Updated message length
+int MESSAGELENGTH = 75;  // Updated message length
 int DELAY = 1000;  // Mean time between transmissions (1000 milliseconds)
 double CSMATIME = 10;  // Check the status of the channel every 10 ms
 

@@ -31,7 +31,7 @@ int thisRSSI = 0;
 int firstIteration = 0;  // First time through main loop send a reset (kludge, I know. Should go in setup).
 char CUSTOM_MESSAGE[20];  // Custom message field
 
-int MESSAGELENGTH = 56;  // Updated message length
+int MESSAGELENGTH = 75;  // Updated message length
 double CSMATIME = 10;    // Check the status of the channel every 10 ms
 
 void setup() {
