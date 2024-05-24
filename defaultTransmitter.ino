@@ -1,89 +1,81 @@
-//This code contains all the fields with custom message
-
-/////
-//
-// Tag code. Generates a message for transmission via relays to Receiver
-// Message format is
-//  SEQ
-//  TYPE (0,9)  // 0 is a message from the tag, 9 is a reset which is sent first time on startup
-//  TAGID
-//  RELAYID (0)
-//  TTL     (5)
-//  RSSI    (0)
-//  CUSTOM_MESSAGE
-//
-/////
-
 #include <SPI.h>
 #include <RH_RF95.h>
 
 // Singleton instance of radio driver
 RH_RF95 rf95;
-int led = 13;  // Define LED pin in case we want to use it to demonstrate activity
+int led = 13;   // Define LED pin in case we want to use it to demonstrate activity
 
 // Message fields
-int SEQ = 0;      // Sequence number
-int TYPE = 0;     // Message type
-int TAGID = 1;    // Identity of tag. Will eventually be read from an SD card.
+int SEQ = 0;     // Sequence number
+int TYPE = 0;    // Message type
+int TAGID = 1;   // Identity of tag. Will eventually be read from an SD card.
 int RELAYID = 0;
 int TTL = 5;
 int thisRSSI = 0;
-int firstIteration = 0;  // First time through main loop send a reset (kludge, I know. Should go in setup).
-char CUSTOM_MESSAGE[20];  // Custom message field
+char USER_ID[20] = "John";  // Sender's username
+char CUSTOM_MESSAGE[80];     // Custom message field
 
-int MESSAGELENGTH = 75;  // Updated message length
-double CSMATIME = 10;    // Check the status of the channel every 10 ms
+int MESSAGELENGTH = 100;
+int TXINTERVAL = 5000;  // Time between transmissions (in ms)
+double CSMATIME = 10;   // Check the status of the channel every 10 ms
 
 void setup() {
-  // Initialize LoRa transceiver
+  // Initialise LoRa transceiver
   pinMode(led, OUTPUT);
   Serial.begin(9600);
   Serial.println("Tag version 1");
   while (!Serial)
     Serial.println("Waiting for serial port");  // Wait for serial port to be available.
   while (!rf95.init()) {
-    Serial.println("Initialization of LoRa receiver failed");
+    Serial.println("Initialisation of LoRa receiver failed");
     delay(1000);
   }
-  rf95.setFrequency(915.0);  // PB set to use 915 MHz
-  rf95.setTxPower(5, false);
-  rf95.setSignalBandwidth(500000);
-  rf95.setSpreadingFactor(12);
+  rf95.setFrequency(915.0);   // Set frequency to 915 MHz
+  rf95.setTxPower(5, false);  // Set transmit power to 5 dBm
+  rf95.setSignalBandwidth(500000);  // Set signal bandwidth
+  rf95.setSpreadingFactor(12);      // Set spreading factor
 }
 
 void loop() {
-  if (Serial.available() > 0) {
-    // Read the custom message from the serial monitor
-    int len = Serial.readBytesUntil('\n', CUSTOM_MESSAGE, sizeof(CUSTOM_MESSAGE) - 1);
-    CUSTOM_MESSAGE[len] = '\0';  // Null-terminate the string
+  // Generate message intermittently (10 seconds)
+  uint8_t buf[MESSAGELENGTH];
+  uint8_t len = sizeof(buf);
+  char str[MESSAGELENGTH];
 
-    // Prepare and send the message
-    uint8_t buf[MESSAGELENGTH];
-    char str[MESSAGELENGTH];
-    if (firstIteration == 0) {  // Kludge to send out a type 9 as first message. Should eventually be in setup.
-      TYPE = 9;
-      firstIteration = 1;
-    } else {
-      TYPE = 0;
-    }
-
-    SEQ++;
-    sprintf(str, "%5d %5d %5d %5d %5d %5d %s", SEQ, TYPE, TAGID, RELAYID, TTL, thisRSSI, CUSTOM_MESSAGE);
-    for (int i = 0; i < MESSAGELENGTH; i++)
-      buf[i] = str[i];
-
-    rf95.setModeIdle();  // Some obscure bug causing loss of every second message
-
-    // Channel should be idle but if not wait for it to go idle
-    while (rf95.isChannelActive()) {
-      delay(CSMATIME);  // Wait for channel to go idle by checking frequently
-      Serial.println("Tag node looping on isChannelActive()");  // DEBUG
-    }
-
-    // Transmit message
-    Serial.print("Transmitted message: ");  // DEBUG
-    Serial.println((char*)buf);  // DEBUG
-    rf95.send(buf, sizeof(buf));
-    rf95.waitPacketSent();
+  // Read custom message from serial monitor
+  Serial.println("Enter your message:");
+  while (Serial.available() == 0) {
+    // Wait for user input
   }
+  int lenInput = Serial.readBytesUntil('\n', CUSTOM_MESSAGE, sizeof(CUSTOM_MESSAGE) - 1);
+  CUSTOM_MESSAGE[lenInput] = '\0';  // Null-terminate the string
+
+  // Prepare message
+  SEQ++;
+  sprintf(str, "%5d %5d %5d %5d %5d %5d %s %s", SEQ, TYPE, TAGID, RELAYID, TTL, thisRSSI, USER_ID, CUSTOM_MESSAGE);
+  for (int i=0; i < MESSAGELENGTH; i++)
+    buf[i] = str[i];
+
+// Transmit message
+Serial.print("Sending message: ");  // Print the message being sent
+Serial.println((char*)buf);         // Print the message content
+rf95.send(buf, sizeof(buf));
+rf95.waitPacketSent();
+Serial.println("Message sent!");
+
+  // Check for incoming packets
+  while (!rf95.available()) {
+    // Wait for a packet to be available
+    delay(100);
+  }
+
+  // Receive incoming packet
+  if (rf95.recv(buf, &len)) {
+    // Print received packet
+    Serial.print("Received: ");
+    Serial.println((char*)buf);
+  }
+
+  // Wait before sending the next message
+  delay(TXINTERVAL);
 }
