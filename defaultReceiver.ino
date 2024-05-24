@@ -42,35 +42,6 @@ void loop() {
   uint8_t buf[MESSAGELENGTH];
   uint8_t len = sizeof(buf);
 
-  if (rf95.available()) {
-    // If a message is available
-    if (rf95.recv(buf, &len)) {
-      digitalWrite(led, HIGH);  // Indicate message reception
-
-      // Unpack the message
-      char str[MESSAGELENGTH + 1];
-      for (int i = 0; i < MESSAGELENGTH; i++)
-        str[i] = buf[i];
-      str[MESSAGELENGTH] = '\0';  // Null-terminate the string
-
-      // Extract subfields using sscanf
-      sscanf(str, "%5d %5d %5d %5d %5d %5d %s %s", &SEQ, &TYPE, &TAGID, &RELAY, &TTL, &thisRSSI, USER_ID, CUSTOM_MESSAGE);
-
-      // Display the received message details
-      Serial.print("Received Seq "); Serial.print(SEQ);
-      Serial.print(" Type "); Serial.print(TYPE);
-      Serial.print(" Tag "); Serial.print(TAGID);
-      Serial.print(" Relay "); Serial.print(RELAY);
-      Serial.print(" TTL "); Serial.print(TTL);
-      Serial.print(" RSSI "); Serial.print(thisRSSI);
-      Serial.print(" User "); Serial.print(USER_ID);
-      Serial.print(" Custom Message: "); Serial.print(CUSTOM_MESSAGE);  // Display custom message
-      Serial.println(" ");
-
-      digitalWrite(led, LOW);  // Turn off the LED
-    }
-  }
-
   // Check for user input to send a reply
   if (Serial.available() > 0) {
     // Read the custom message from the serial monitor
@@ -98,5 +69,34 @@ void loop() {
     Serial.println((char*)buf);  // DEBUG
     rf95.send(buf, sizeof(buf));
     rf95.waitPacketSent();
+  }
+
+  if (rf95.available()) {
+    // If a message is available
+    if (rf95.recv(buf, &len)) {
+      digitalWrite(led, HIGH);  // Indicate message reception
+
+      // Unpack the message
+      char str[MESSAGELENGTH + 1];
+      for (int i = 0; i < MESSAGELENGTH; i++)
+        str[i] = buf[i];
+      str[MESSAGELENGTH] = '\0';  // Null-terminate the string
+
+      // Extract subfields using sscanf
+      sscanf(str, "%5d %5d %5d %5d %5d %5d %s %s", &SEQ, &TYPE, &TAGID, &RELAY, &TTL, &thisRSSI, USER_ID, CUSTOM_MESSAGE);
+
+      // Display the received message details
+      Serial.print("Received Seq "); Serial.print(SEQ);
+      Serial.print(" Type "); Serial.print(TYPE);
+      Serial.print(" Tag "); Serial.print(TAGID);
+      Serial.print(" Relay "); Serial.print(RELAY);
+      Serial.print(" TTL "); Serial.print(TTL);
+      Serial.print(" RSSI "); Serial.print(thisRSSI);
+      Serial.print(" User "); Serial.print(USER_ID);
+      Serial.print(" Custom Message: "); Serial.print(CUSTOM_MESSAGE);  // Display custom message
+      Serial.println(" ");
+
+      digitalWrite(led, LOW);  // Turn off the LED
+    }
   }
 }
