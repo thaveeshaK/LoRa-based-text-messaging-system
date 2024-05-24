@@ -48,6 +48,11 @@ void loop() {
     int len = Serial.readBytesUntil('\n', CUSTOM_MESSAGE, sizeof(CUSTOM_MESSAGE) - 1);
     CUSTOM_MESSAGE[len] = '\0';  // Null-terminate the string
 
+    // Clear input buffer
+    while (Serial.available() > 0) {
+      Serial.read();
+    }
+
     // Prepare and send the reply message
     SEQ++;
     char reply[MESSAGELENGTH];
