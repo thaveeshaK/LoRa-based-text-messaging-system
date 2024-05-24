@@ -24,12 +24,12 @@ void setup() {
   pinMode(led, OUTPUT);
   Serial.begin(9600);
   Serial.println("Tag version 1");
-  while (!Serial)
-    Serial.println("Waiting for serial port");  // Wait for serial port to be available.
-  while (!rf95.init()) {
-    Serial.println("Initialisation of LoRa receiver failed");
-    delay(1000);
+
+  if (!rf95.init()) {
+    Serial.println("Initialization of LoRa receiver failed");
+    while (1); // Halt if LoRa initialization failed
   }
+
   rf95.setFrequency(915.0);   // Set frequency to 915 MHz
   rf95.setTxPower(5, false);  // Set transmit power to 5 dBm
   rf95.setSignalBandwidth(500000);  // Set signal bandwidth
@@ -43,37 +43,32 @@ void loop() {
   char str[MESSAGELENGTH];
 
   // Read custom message from serial monitor
-  Serial.println("Enter your message:");
-  while (Serial.available() == 0) {
-    // Wait for user input
+  if (Serial.available() > 0) {
+    int lenInput = Serial.readBytesUntil('\n', CUSTOM_MESSAGE, sizeof(CUSTOM_MESSAGE) - 1);
+    CUSTOM_MESSAGE[lenInput] = '\0';  // Null-terminate the string
+
+    // Prepare message
+    SEQ++;
+    sprintf(str, "%5d %5d %5d %5d %5d %5d %s %s", SEQ, TYPE, TAGID, RELAYID, TTL, thisRSSI, USER_ID, CUSTOM_MESSAGE);
+    for (int i=0; i < MESSAGELENGTH; i++)
+      buf[i] = str[i];
+
+    // Transmit message
+    Serial.print("Sending message: ");  // Print the message being sent
+    Serial.println((char*)buf);         // Print the message content
+    rf95.send(buf, sizeof(buf));
+    rf95.waitPacketSent();
+    Serial.println("Message sent!");
   }
-  int lenInput = Serial.readBytesUntil('\n', CUSTOM_MESSAGE, sizeof(CUSTOM_MESSAGE) - 1);
-  CUSTOM_MESSAGE[lenInput] = '\0';  // Null-terminate the string
-
-  // Prepare message
-  SEQ++;
-  sprintf(str, "%5d %5d %5d %5d %5d %5d %s %s", SEQ, TYPE, TAGID, RELAYID, TTL, thisRSSI, USER_ID, CUSTOM_MESSAGE);
-  for (int i=0; i < MESSAGELENGTH; i++)
-    buf[i] = str[i];
-
-// Transmit message
-Serial.print("Sending message: ");  // Print the message being sent
-Serial.println((char*)buf);         // Print the message content
-rf95.send(buf, sizeof(buf));
-rf95.waitPacketSent();
-Serial.println("Message sent!");
 
   // Check for incoming packets
-  while (!rf95.available()) {
-    // Wait for a packet to be available
-    delay(100);
-  }
-
-  // Receive incoming packet
-  if (rf95.recv(buf, &len)) {
-    // Print received packet
-    Serial.print("Received: ");
-    Serial.println((char*)buf);
+  if (rf95.available()) {
+    // Receive incoming packet
+    if (rf95.recv(buf, &len)) {
+      // Print received packet
+      Serial.print("Received: ");
+      Serial.println((char*)buf);
+    }
   }
 
   // Wait before sending the next message
