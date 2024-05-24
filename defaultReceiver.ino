@@ -2,7 +2,7 @@
 /////
 //
 // Relay code. Listens for TAG messages, formats them, and retransmits them.
-// Also forwards messages from other relays. Length is 25 bytes.
+// Also forwards messages from other relays. Length is 56 bytes.
 // Message format is
 //  SEQ       %5d
 //  TYPE (1)  %5d
@@ -30,7 +30,7 @@ int TYPE = 1;  // Message type
 char CUSTOM_MESSAGE[20];  // Custom message field
 
 int MESSAGELENGTH = 56;  // Updated message length
-int DELAY = 1000;  // Mean time between transmissions (100 milliseconds)
+int DELAY = 1000;  // Mean time between transmissions (1000 milliseconds)
 double CSMATIME = 10;  // Check the status of the channel every 10 ms
 
 void setup() {
@@ -62,12 +62,18 @@ void loop() {
     }
 
     // Unpack the message
-    char str[MESSAGELENGTH];
+    char str[MESSAGELENGTH + 1];
     for (int i = 0; i < MESSAGELENGTH; i++)
       str[i] = buf[i];
+    str[MESSAGELENGTH] = '\0';  // Null-terminate the string
 
     // Extract subfields using sscanf
-    sscanf(str, "%5d %5d %5d %5d %5d %5d %s", &SEQ, &TYPE, &TAGID, &RELAY, &TTL, &thisRSSI, CUSTOM_MESSAGE);
+    sscanf(str, "%5d %5d %5d %5d %5d %5d", &SEQ, &TYPE, &TAGID, &RELAY, &TTL, &thisRSSI);
+
+    // Extract custom message (part after the fixed-size fields)
+    const char *message_start = str + 36;
+    strncpy(CUSTOM_MESSAGE, message_start, sizeof(CUSTOM_MESSAGE) - 1);
+    CUSTOM_MESSAGE[sizeof(CUSTOM_MESSAGE) - 1] = '\0';  // Ensure null-termination
 
     // Display the received message details
     Serial.print("Seq "); Serial.print(SEQ);
@@ -77,7 +83,7 @@ void loop() {
     Serial.print(" TTL "); Serial.print(TTL);
     Serial.print(" RSSI "); Serial.print(thisRSSI);
     Serial.print(" Last RSSI "); Serial.print(rf95.lastRssi());
-    Serial.print(" Custom Message "); Serial.print(CUSTOM_MESSAGE);  // Display custom message
+    Serial.print(" Custom Message: "); Serial.print(CUSTOM_MESSAGE);  // Display custom message
     Serial.println(" ");
   }
 
