@@ -4,7 +4,7 @@ import serial
 
 # Set up serial communication
 try:
-    ser = serial.Serial('COM4', 9600)
+    ser = serial.Serial('COM5', 9600)
 except serial.SerialException as e:
     ser = None
     messagebox.showerror("Serial Port Error", f"Could not open port 'COM4'.\n{e}")
