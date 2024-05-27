@@ -30,7 +30,7 @@ void setup() {
     while (1); // Halt if LoRa initialization failed
   }
 
-  rf95.setFrequency(915.0);   // Set frequency to 915 MHz
+  rf95.setFrequency(868.0);  // Set frequency to 868 MHz
   rf95.setTxPower(5, false);  // Set transmit power to 5 dBm
   rf95.setSignalBandwidth(500000);  // Set signal bandwidth
   rf95.setSpreadingFactor(12);      // Set spreading factor
