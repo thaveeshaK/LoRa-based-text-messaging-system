@@ -1,23 +1,40 @@
 import tkinter as tk
 from tkinter import Text, Entry, Button, Label, messagebox
 import serial
+import hashlib
+
+
+# Function to hash a password
+def hash_password(password):
+    # Hash the password using SHA-256
+    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+    return hashed_password
+
 
 # Set up serial communication
 ser = None  # Will be initialized later based on the end (transmitter or receiver)
 
+# Modify this with the hashed password stored in your system
+stored_hashed_password = "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"
+
+
 def login():
     username = entry1.get()
     password = entry2.get()
+
+    # Hash the entered password
+    hashed_entered_password = hash_password(password)
+
     if username == "" or password == "":
         messagebox.showinfo("Error", "Please enter both username and password")
-    elif username == "admin" and password == "password":
+    elif username == "admin" and hashed_entered_password == stored_hashed_password:
         launchDashboard()
     else:
         messagebox.showinfo("Error", "Incorrect username or password")
 
-def launchDashboard(is_transmitter=False):
+
+def launchDashboard():
     def update_textbox():
-        nonlocal is_transmitter
         if ser and ser.in_waiting:
             value = ser.readline()
             valueInString = value.decode('UTF-8').strip()
@@ -26,16 +43,14 @@ def launchDashboard(is_transmitter=False):
         dashboard.after(100, update_textbox)  # Schedule the function to be called again after 100 ms
 
     def send_message():
-        nonlocal is_transmitter
         message = message_entry.get()
         if message:
-            # Transmit the message over serial if it's a transmitter
-            if is_transmitter and ser:
+            # Transmit the message over serial
+            if ser:
                 ser.write(message.encode('UTF-8'))
             # Update the GUI with the sent message
             message_entry.delete(0, tk.END)
-            prefix = "Sent: " if is_transmitter else "Received: "
-            text_widget.insert(tk.END, prefix + message + '\n')
+            text_widget.insert(tk.END, "Sent: " + message + '\n')
             text_widget.see(tk.END)
 
     dashboard = tk.Tk()
@@ -58,13 +73,12 @@ def launchDashboard(is_transmitter=False):
     send_button = Button(input_frame, text="Send", command=send_message)
     send_button.pack(side=tk.LEFT, padx=(10, 0))
 
-    # Start the periodic check for new messages only if it's a receiver
-    if not is_transmitter:
-        dashboard.after(100, update_textbox)
+    # Start the periodic check for new messages
+    dashboard.after(100, update_textbox)
 
     dashboard.mainloop()
 
-# GUI for login
+
 root = tk.Tk()
 root.title("LoRa Based Messaging System - Login")
 root.geometry('400x250')
